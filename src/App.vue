@@ -4,6 +4,7 @@ import MapView from './components/MapView.vue'
 import PlaceList from './components/PlaceList.vue'
 import PlaceForm from './components/PlaceForm.vue'
 import PlaceDetail from './components/PlaceDetail.vue'
+import StatsView from './components/StatsView.vue'
 import { usePlacesStore } from './stores/places'
 
 const store = usePlacesStore()
@@ -12,6 +13,7 @@ const mapRef = ref<InstanceType<typeof MapView>>()
 const picking = ref(false)
 const picked = ref<{ lat: number | null; lng: number | null }>({ lat: null, lng: null })
 const showForm = ref(false)
+const showStats = ref(false)
 const detailId = ref<string | null>(null)
 const mobileTab = ref<'map' | 'list'>('map')
 
@@ -55,7 +57,10 @@ function locateOnMap(p: { lat: number; lng: number }) {
   <div class="app">
     <header class="topbar">
       <div class="brand">🧭 我的旅行足迹</div>
-      <div class="stat">已打卡 <b>{{ stats.total }}</b> 处 · {{ stats.cats }} 个分类</div>
+      <div class="top-right">
+        <span class="stat">已打卡 <b>{{ stats.total }}</b> 处 · {{ stats.cats }} 个分类</span>
+        <button class="stats-btn" @click="showStats = true">📊 统计</button>
+      </div>
     </header>
 
     <div class="tabs">
@@ -85,6 +90,13 @@ function locateOnMap(p: { lat: number; lng: number }) {
         <PlaceDetail :id="detailId" @close="detailId = null" @locate="locateOnMap" />
       </div>
     </div>
+
+    <!-- 统计 -->
+    <div v-if="showStats" class="overlay" @click.self="showStats = false">
+      <div class="modal">
+        <StatsView @close="showStats = false" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -92,7 +104,10 @@ function locateOnMap(p: { lat: number; lng: number }) {
 .app { display: flex; flex-direction: column; height: 100vh; }
 .topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; background: #0f172a; color: #fff; }
 .brand { font-size: 17px; font-weight: 700; }
+.top-right { display: flex; align-items: center; gap: 12px; }
 .stat { font-size: 13px; color: #cbd5e1; } .stat b { color: #fff; }
+.stats-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #fff; font-size: 13px; cursor: pointer; }
+.stats-btn:hover { background: #334155; }
 .tabs { display: none; }
 .content { flex: 1; display: flex; min-height: 0; }
 .map-pane { position: relative; flex: 1; }

@@ -14,9 +14,11 @@ const emit = defineEmits<{
 const store = usePlacesStore()
 const el = ref<HTMLDivElement>()
 const providerKey = ref('osm')
+const showTrack = ref(false)
 let map: L.Map
 let tileLayer: L.TileLayer
 let markerLayer: L.LayerGroup
+let trackLayer: L.Polyline | null = null
 let pickMarker: L.Marker | null = null
 
 function buildTile() {
@@ -50,11 +52,28 @@ function renderMarkers() {
   }
 }
 
+function renderTrack() {
+  if (trackLayer) {
+    map.removeLayer(trackLayer)
+    trackLayer = null
+  }
+  if (!showTrack.value) return
+  const pts = [...store.filtered].sort(
+    (a, b) => a.visitedAt.localeCompare(b.visitedAt) || a.createdAt - b.createdAt,
+  )
+  if (pts.length < 2) return
+  trackLayer = L.polyline(
+    pts.map((p) => [p.lat, p.lng] as [number, number]),
+    { color: '#2563eb', weight: 3, opacity: 0.7, dashArray: '6 8' },
+  ).addTo(map)
+}
+
 onMounted(() => {
   map = L.map(el.value!, { zoomControl: true }).setView(DEFAULT_CENTER, DEFAULT_ZOOM)
   buildTile()
   markerLayer = L.layerGroup().addTo(map)
   renderMarkers()
+  renderTrack()
 
   map.on('click', (e: L.LeafletMouseEvent) => {
     if (!props.picking) return
@@ -67,7 +86,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => map?.remove())
 
-watch(() => store.filtered, renderMarkers, { deep: true })
+watch(() => store.filtered, () => { renderMarkers(); renderTrack() }, { deep: true })
+watch(showTrack, renderTrack)
 watch(providerKey, buildTile)
 watch(
   () => props.picking,
@@ -105,7 +125,8 @@ defineExpose({ focus: (lat: number, lng: number) => map?.setView([lat, lng], 15)
       <select v-model="providerKey" class="provider">
         <option v-for="p in TILE_PROVIDERS" :key="p.key" :value="p.key">{{ p.label }}</option>
       </select>
-      <button class="btn-locate" type="button" @click="locate">📍 定位</button>
+      <button class="ctrl" type="button" :class="{ on: showTrack }" @click="showTrack = !showTrack">🧵 足迹</button>
+      <button class="ctrl" type="button" @click="locate">📍 定位</button>
     </div>
     <div v-if="picking" class="pick-hint">点击地图选择打卡位置</div>
   </div>
@@ -116,6 +137,7 @@ defineExpose({ focus: (lat: number, lng: number) => map?.setView([lat, lng], 15)
 .map { width: 100%; height: 100%; }
 .map-controls { position: absolute; top: 10px; right: 10px; z-index: 500; display: flex; gap: 8px; }
 .provider { padding: 6px 8px; border-radius: 8px; border: 1px solid #d1d5db; background: #fff; font-size: 13px; }
-.btn-locate { padding: 6px 10px; border-radius: 8px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-size: 13px; }
+.ctrl { padding: 6px 10px; border-radius: 8px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-size: 13px; }
+.ctrl.on { background: #2563eb; color: #fff; border-color: #2563eb; }
 .pick-hint { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 500; background: #ef4444; color: #fff; padding: 6px 14px; border-radius: 999px; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
 </style>
