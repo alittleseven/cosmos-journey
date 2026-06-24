@@ -2,7 +2,7 @@
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import L from 'leaflet'
 import { usePlacesStore } from '../stores/places'
-import { categoryMeta } from '../types'
+import { checkinTypeMeta } from '../types'
 import { TILE_PROVIDERS, DEFAULT_CENTER, DEFAULT_ZOOM } from '../map/providers'
 
 const props = defineProps<{ picking: boolean }>()
@@ -43,9 +43,9 @@ function emojiIcon(emoji: string, color: string) {
 
 function renderMarkers() {
   markerLayer.clearLayers()
-  for (const p of store.filtered) {
-    const m = categoryMeta(p.category)
-    const marker = L.marker([p.lat, p.lng], { icon: emojiIcon(m.emoji, m.color) })
+  for (const p of store.located) {
+    const m = checkinTypeMeta(p.type)
+    const marker = L.marker([p.lat!, p.lng!], { icon: emojiIcon(m.emoji, m.color) })
     marker.bindTooltip(p.name, { direction: 'top', offset: [0, -38] })
     marker.on('click', () => emit('select', p.id))
     marker.addTo(markerLayer)
@@ -58,12 +58,12 @@ function renderTrack() {
     trackLayer = null
   }
   if (!showTrack.value) return
-  const pts = [...store.filtered].sort(
-    (a, b) => a.visitedAt.localeCompare(b.visitedAt) || a.createdAt - b.createdAt,
+  const pts = [...store.located].sort(
+    (a, b) => a.happenedAt.localeCompare(b.happenedAt) || a.createdAt - b.createdAt,
   )
   if (pts.length < 2) return
   trackLayer = L.polyline(
-    pts.map((p) => [p.lat, p.lng] as [number, number]),
+    pts.map((p) => [p.lat!, p.lng!] as [number, number]),
     { color: '#2563eb', weight: 3, opacity: 0.7, dashArray: '6 8' },
   ).addTo(map)
 }
@@ -86,7 +86,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => map?.remove())
 
-watch(() => store.filtered, () => { renderMarkers(); renderTrack() }, { deep: true })
+watch(() => store.located, () => { renderMarkers(); renderTrack() }, { deep: true })
 watch(showTrack, renderTrack)
 watch(providerKey, buildTile)
 watch(

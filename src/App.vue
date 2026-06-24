@@ -18,9 +18,9 @@ const detailId = ref<string | null>(null)
 const mobileTab = ref<'map' | 'list'>('map')
 
 const stats = computed(() => {
-  const total = store.places.length
-  const cats = new Set(store.places.map((p) => p.category)).size
-  return { total, cats }
+  const total = store.checkins.length
+  const types = new Set(store.checkins.map((c) => c.type)).size
+  return { total, types }
 })
 
 function startAdd() {
@@ -44,8 +44,8 @@ function cancelForm() {
 }
 function openDetail(id: string) {
   detailId.value = id
-  const p = store.get(id)
-  if (p) mapRef.value?.focus(p.lat, p.lng)
+  const c = store.get(id)
+  if (c && c.lat != null && c.lng != null) mapRef.value?.focus(c.lat, c.lng)
 }
 function locateOnMap(p: { lat: number; lng: number }) {
   mobileTab.value = 'map'
@@ -58,7 +58,7 @@ function locateOnMap(p: { lat: number; lng: number }) {
     <header class="topbar">
       <div class="brand">🧭 我的旅行足迹</div>
       <div class="top-right">
-        <span class="stat">已打卡 <b>{{ stats.total }}</b> 处 · {{ stats.cats }} 个分类</span>
+        <span class="stat">已打卡 <b>{{ stats.total }}</b> 处 · {{ stats.types }} 种类型</span>
         <button class="stats-btn" @click="showStats = true">📊 统计</button>
       </div>
     </header>
@@ -87,7 +87,7 @@ function locateOnMap(p: { lat: number; lng: number }) {
     <!-- 详情 -->
     <div v-if="detailId && !showForm" class="overlay" @click.self="detailId = null">
       <div class="modal">
-        <PlaceDetail :id="detailId" @close="detailId = null" @locate="locateOnMap" />
+        <PlaceDetail :id="detailId" @close="detailId = null" @open="openDetail" @locate="locateOnMap" />
       </div>
     </div>
 

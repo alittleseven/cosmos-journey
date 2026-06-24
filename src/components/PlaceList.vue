@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePlacesStore } from '../stores/places'
-import { CATEGORIES, categoryMeta } from '../types'
+import { CHECKIN_TYPES, checkinTypeMeta } from '../types'
 import StarRating from './StarRating.vue'
 
 const emit = defineEmits<{ (e: 'open', id: string): void }>()
@@ -12,27 +12,27 @@ const store = usePlacesStore()
     <div class="filters">
       <input v-model="store.search" class="search" placeholder="🔍 搜索名称 / 地址 / 笔记" />
       <div class="chips">
-        <button :class="{ on: store.filterCategory === 'all' }" @click="store.filterCategory = 'all'">全部</button>
+        <button :class="{ on: store.filterType === 'all' }" @click="store.filterType = 'all'">全部</button>
         <button
-          v-for="c in CATEGORIES"
-          :key="c.key"
-          :class="{ on: store.filterCategory === c.key }"
-          @click="store.filterCategory = c.key"
+          v-for="t in CHECKIN_TYPES"
+          :key="t.key"
+          :class="{ on: store.filterType === t.key }"
+          @click="store.filterType = t.key"
         >
-          {{ c.emoji }} {{ c.label }}
+          {{ t.emoji }} {{ t.label }}
         </button>
       </div>
     </div>
 
-    <div class="count">共 {{ store.filtered.length }} 个打卡点</div>
+    <div class="count">共 {{ store.filtered.length }} 个打卡</div>
 
-    <div v-if="store.filtered.length === 0" class="empty">还没有打卡点，去地图上添加吧 🗺️</div>
+    <div v-if="store.filtered.length === 0" class="empty">还没有打卡，去地图上添加吧 🗺️</div>
 
     <ul>
       <li v-for="p in store.filtered" :key="p.id" @click="emit('open', p.id)">
-        <div class="thumb" :style="{ background: categoryMeta(p.category).color + '22' }">
+        <div class="thumb" :style="{ background: checkinTypeMeta(p.type).color + '22' }">
           <img v-if="p.images[0]" :src="p.images[0]" />
-          <span v-else>{{ categoryMeta(p.category).emoji }}</span>
+          <span v-else>{{ checkinTypeMeta(p.type).emoji }}</span>
         </div>
         <div class="info">
           <div class="row1">
@@ -40,7 +40,8 @@ const store = usePlacesStore()
             <StarRating :model-value="p.rating" readonly />
           </div>
           <div class="meta">
-            {{ categoryMeta(p.category).emoji }} {{ categoryMeta(p.category).label }} · {{ p.visitedAt }}
+            {{ checkinTypeMeta(p.type).emoji }} {{ checkinTypeMeta(p.type).label }} · {{ p.happenedAt }}
+            <span v-if="p.itemIds?.length"> · 含 {{ p.itemIds.length }} 项</span>
           </div>
           <div v-if="p.note" class="note">{{ p.note }}</div>
         </div>

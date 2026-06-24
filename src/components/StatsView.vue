@@ -1,33 +1,33 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { usePlacesStore } from '../stores/places'
-import { CATEGORIES } from '../types'
+import { CHECKIN_TYPES } from '../types'
 
 const emit = defineEmits<{ (e: 'close'): void }>()
 const store = usePlacesStore()
 
-const total = computed(() => store.places.length)
+const total = computed(() => store.checkins.length)
 
 const avgRating = computed(() => {
   if (!total.value) return 0
-  return store.places.reduce((s, p) => s + p.rating, 0) / total.value
+  return store.checkins.reduce((s, c) => s + c.rating, 0) / total.value
 })
 
-const withPhotos = computed(() => store.places.filter((p) => p.images.length > 0).length)
+const withPhotos = computed(() => store.checkins.filter((c) => c.images.length > 0).length)
 
-const byCategory = computed(() =>
-  CATEGORIES.map((c) => ({
-    ...c,
-    count: store.places.filter((p) => p.category === c.key).length,
-  })).filter((c) => c.count > 0),
+const byType = computed(() =>
+  CHECKIN_TYPES.map((t) => ({
+    ...t,
+    count: store.checkins.filter((c) => c.type === t.key).length,
+  })).filter((t) => t.count > 0),
 )
 
-const maxCat = computed(() => Math.max(1, ...byCategory.value.map((c) => c.count)))
+const maxType = computed(() => Math.max(1, ...byType.value.map((t) => t.count)))
 
 const byMonth = computed(() => {
   const map = new Map<string, number>()
-  for (const p of store.places) {
-    const m = (p.visitedAt || '').slice(0, 7) || '未知'
+  for (const c of store.checkins) {
+    const m = (c.happenedAt || '').slice(0, 7) || '未知'
     map.set(m, (map.get(m) ?? 0) + 1)
   }
   return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([month, count]) => ({ month, count }))
@@ -39,26 +39,26 @@ const maxMonth = computed(() => Math.max(1, ...byMonth.value.map((m) => m.count)
 <template>
   <div class="stats">
     <div class="head">
-      <strong>📊 我的旅行统计</strong>
+      <strong>📊 我的打卡统计</strong>
       <button class="x" @click="emit('close')">✕</button>
     </div>
 
     <div class="body">
       <div class="cards">
-        <div class="card"><b>{{ total }}</b><span>打卡点</span></div>
-        <div class="card"><b>{{ byCategory.length }}</b><span>分类</span></div>
+        <div class="card"><b>{{ total }}</b><span>打卡</span></div>
+        <div class="card"><b>{{ byType.length }}</b><span>类型</span></div>
         <div class="card"><b>{{ avgRating.toFixed(1) }}</b><span>平均评分</span></div>
         <div class="card"><b>{{ withPhotos }}</b><span>含照片</span></div>
       </div>
 
-      <h4>按分类</h4>
-      <div v-if="byCategory.length" class="bars">
-        <div v-for="c in byCategory" :key="c.key" class="bar-row">
-          <span class="label">{{ c.emoji }} {{ c.label }}</span>
+      <h4>按类型</h4>
+      <div v-if="byType.length" class="bars">
+        <div v-for="t in byType" :key="t.key" class="bar-row">
+          <span class="label">{{ t.emoji }} {{ t.label }}</span>
           <div class="track">
-            <div class="fill" :style="{ width: (c.count / maxCat) * 100 + '%', background: c.color }"></div>
+            <div class="fill" :style="{ width: (t.count / maxType) * 100 + '%', background: t.color }"></div>
           </div>
-          <span class="num">{{ c.count }}</span>
+          <span class="num">{{ t.count }}</span>
         </div>
       </div>
       <p v-else class="empty">暂无数据</p>
