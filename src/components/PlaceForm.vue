@@ -12,10 +12,12 @@ import { usePlacesStore } from '../stores/places'
 import { fileToCompressedDataUrl } from '../utils/image'
 import StarRating from './StarRating.vue'
 
-const props = defineProps<{ lat: number | null; lng: number | null }>()
+const props = defineProps<{ lat: number | null; lng: number | null; editId?: string | null }>()
 const emit = defineEmits<{ (e: 'close'): void; (e: 'saved', id: string): void }>()
 
 const store = usePlacesStore()
+
+const isEdit = computed(() => !!props.editId)
 
 const type = ref<CheckinType>('attraction')
 const form = reactive({
@@ -31,12 +33,30 @@ const details = reactive<Record<string, string>>({})
 // 集合型成员（travel / club）
 const itemIds = ref<string[]>([])
 
+// 编辑模式：用已有记录预填表单
+if (props.editId) {
+  const c = store.get(props.editId)
+  if (c) {
+    type.value = c.type
+    form.name = c.name
+    if (c.category) form.category = c.category
+    form.note = c.note ?? ''
+    form.rating = c.rating
+    form.images = [...c.images]
+    form.happenedAt = c.happenedAt
+    for (const [k, v] of Object.entries(c.details ?? {})) details[k] = String(v)
+    itemIds.value = [...(c.itemIds ?? [])]
+  }
+}
+
 const fields = computed(() => TYPE_FIELDS[type.value])
 const isCollection = computed(() => isCollectionType(type.value))
 
-// 可作为集合成员的候选（排除集合自身类型，避免循环嵌套从简）
+// 可作为集合成员的候选（排除集合自身类型与正在编辑的自己，避免循环嵌套从简）
 const candidates = computed(() =>
-  store.checkins.filter((c) => c.type !== 'travel' && c.type !== 'club'),
+  store.checkins.filter(
+    (c) => c.type !== 'travel' && c.type !== 'club' && c.id !== props.editId,
+  ),
 )
 
 function toggleMember(id: string) {
@@ -66,7 +86,7 @@ function save() {
     if (!v) continue
     detailPayload[f.key] = f.type === 'number' ? Number(v) : v
   }
-  const item = store.add({
+  const payload = {
     type: type.value,
     name: form.name.trim(),
     category: type.value === 'attraction' ? form.category : undefined,
@@ -78,15 +98,21 @@ function save() {
     happenedAt: form.happenedAt,
     details: detailPayload,
     itemIds: isCollection.value ? [...itemIds.value] : undefined,
-  })
-  emit('saved', item.id)
+  }
+  if (props.editId) {
+    store.update(props.editId, payload)
+    emit('saved', props.editId)
+  } else {
+    const item = store.add(payload)
+    emit('saved', item.id)
+  }
 }
 </script>
 
 <template>
   <div class="sheet">
     <div class="sheet-head">
-      <strong>✍️ 新增打卡</strong>
+      <strong>{{ isEdit ? '✏️ 编辑打卡' : '✍️ 新增打卡' }}</strong>
       <button class="x" @click="emit('close')">✕</button>
     </div>
     <div class="sheet-body">
@@ -181,7 +207,7 @@ function save() {
     </div>
     <div class="sheet-foot">
       <button class="ghost" @click="emit('close')">取消</button>
-      <button class="primary" @click="save">保存打卡</button>
+      <button class="primary" @click="save">{{ isEdit ? '保存修改' : '保存打卡' }}</button>
     </div>
   </div>
 </template>

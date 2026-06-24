@@ -8,6 +8,7 @@ const props = defineProps<{ id: string }>()
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'open', id: string): void
+  (e: 'edit', id: string): void
   (e: 'locate', payload: { lat: number; lng: number }): void
 }>()
 
@@ -86,6 +87,7 @@ function del() {
         :disabled="place.lat == null || place.lng == null"
         @click="place.lat != null && place.lng != null && emit('locate', { lat: place.lat, lng: place.lng })"
       >在地图查看</button>
+      <button class="edit" @click="emit('edit', place.id)">编辑</button>
       <button class="danger" @click="del">删除</button>
     </div>
   </div>
@@ -114,5 +116,6 @@ function del() {
 .foot button { flex: 1; padding: 10px; border-radius: 10px; border: none; cursor: pointer; font-size: 14px; }
 .foot button:disabled { opacity: .45; cursor: not-allowed; }
 .ghost { background: #2563eb; color: #fff; }
-.danger { background: #fee2e2; color: #b91c1c; flex: 0 0 80px; }
+.edit { background: #f1f5f9; color: #334155; flex: 0 0 72px; }
+.danger { background: #fee2e2; color: #b91c1c; flex: 0 0 72px; }
 </style>

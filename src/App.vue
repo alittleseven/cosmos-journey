@@ -15,6 +15,7 @@ const picked = ref<{ lat: number | null; lng: number | null }>({ lat: null, lng:
 const showForm = ref(false)
 const showStats = ref(false)
 const detailId = ref<string | null>(null)
+const editId = ref<string | null>(null)
 const mobileTab = ref<'map' | 'list'>('map')
 
 const stats = computed(() => {
@@ -25,7 +26,17 @@ const stats = computed(() => {
 
 function startAdd() {
   detailId.value = null
+  editId.value = null
   picked.value = { lat: null, lng: null }
+  picking.value = true
+  showForm.value = true
+  mobileTab.value = 'map'
+}
+function startEdit(id: string) {
+  const c = store.get(id)
+  detailId.value = null
+  editId.value = id
+  picked.value = { lat: c?.lat ?? null, lng: c?.lng ?? null }
   picking.value = true
   showForm.value = true
   mobileTab.value = 'map'
@@ -36,11 +47,13 @@ function onPick(p: { lat: number; lng: number }) {
 function onSaved(id: string) {
   showForm.value = false
   picking.value = false
+  editId.value = null
   detailId.value = id
 }
 function cancelForm() {
   showForm.value = false
   picking.value = false
+  editId.value = null
 }
 function openDetail(id: string) {
   detailId.value = id
@@ -81,13 +94,13 @@ function locateOnMap(p: { lat: number; lng: number }) {
 
     <!-- 新增打卡：底部面板，地图保持可见以便选点 -->
     <div v-if="showForm" class="overlay sheet-overlay">
-      <PlaceForm :lat="picked.lat" :lng="picked.lng" @close="cancelForm" @saved="onSaved" />
+      <PlaceForm :lat="picked.lat" :lng="picked.lng" :edit-id="editId" @close="cancelForm" @saved="onSaved" />
     </div>
 
     <!-- 详情 -->
     <div v-if="detailId && !showForm" class="overlay" @click.self="detailId = null">
       <div class="modal">
-        <PlaceDetail :id="detailId" @close="detailId = null" @open="openDetail" @locate="locateOnMap" />
+        <PlaceDetail :id="detailId" @close="detailId = null" @open="openDetail" @edit="startEdit" @locate="locateOnMap" />
       </div>
     </div>
 
